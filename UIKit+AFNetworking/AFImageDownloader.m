@@ -1,5 +1,5 @@
 // AFImageDownloader.m
-// Copyright (c) 2011–2016 Alamofire Software Foundation (http://alamofire.org/)
+// Copyright (c) 2011–2016 Alamofire Software Foundation ( http://alamofire.org/ )
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -110,6 +110,16 @@
 @implementation AFImageDownloader
 
 + (NSURLCache *)defaultURLCache {
+    // It's been discovered that a crash will occur on certain versions
+    // of iOS if you customize the cache.
+    //
+    // More info can be found here: https://devforums.apple.com/message/1102182#1102182
+    //
+    // When iOS 7 support is dropped, this should be modified to use
+    // NSProcessInfo methods instead.
+    if ([[[UIDevice currentDevice] systemVersion] compare:@"8.2" options:NSNumericSearch] == NSOrderedAscending) {
+        return [NSURLCache sharedURLCache];
+    }
     return [[NSURLCache alloc] initWithMemoryCapacity:20 * 1024 * 1024
                                          diskCapacity:150 * 1024 * 1024
                                              diskPath:@"com.alamofire.imagedownloader"];
@@ -183,12 +193,21 @@
 }
 
 - (nullable AFImageDownloadReceipt *)downloadImageForURLRequest:(NSURLRequest *)request
-                                                 withReceiptID:(nonnull NSUUID *)receiptID
+                                                  withReceiptID:(nonnull NSUUID *)receiptID
                                                         success:(nullable void (^)(NSURLRequest *request, NSHTTPURLResponse  * _Nullable response, UIImage *responseObject))success
                                                         failure:(nullable void (^)(NSURLRequest *request, NSHTTPURLResponse * _Nullable response, NSError *error))failure {
     __block NSURLSessionDataTask *task = nil;
     dispatch_sync(self.synchronizationQueue, ^{
         NSString *URLIdentifier = request.URL.absoluteString;
+        if (URLIdentifier == nil) {
+            if (failure) {
+                NSError *error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorBadURL userInfo:nil];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    failure(request, nil, error);
+                });
+            }
+            return;
+        }
 
         // 1) Append the success and failure blocks to a pre-existing request if it already exists
         AFImageDownloaderMergedTask *existingMergedTask = self.mergedTasks[URLIdentifier];
@@ -226,6 +245,8 @@
 
         createdTask = [self.sessionManager
                        dataTaskWithRequest:request
+                       uploadProgress:nil
+                       downloadProgress:nil
                        completionHandler:^(NSURLResponse * _Nonnull response, id  _Nullable responseObject, NSError * _Nullable error) {
                            dispatch_async(self.responseQueue, ^{
                                __strong __typeof__(weakSelf) strongSelf = weakSelf;

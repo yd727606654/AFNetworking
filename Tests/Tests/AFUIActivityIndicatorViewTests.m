@@ -1,5 +1,5 @@
 // AFUIActivityIndicatorViewTests.h
-// Copyright (c) 2011–2016 Alamofire Software Foundation (http://alamofire.org/)
+// Copyright (c) 2011–2016 Alamofire Software Foundation ( http://alamofire.org/ )
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,7 @@
 - (void)setUp {
     [super setUp];
     self.activityIndicatorView = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhite];
-    self.request = [NSURLRequest requestWithURL:[self.baseURL URLByAppendingPathComponent:@"delay/1"]];
+    self.request = [NSURLRequest requestWithURL:self.delayURL];
     self.sessionManager = [[AFURLSessionManager alloc] initWithSessionConfiguration:nil];
 }
 
@@ -49,6 +49,8 @@
     [self expectationForNotification:AFNetworkingTaskDidResumeNotification object:nil handler:nil];
     NSURLSessionDataTask *task = [self.sessionManager
                                   dataTaskWithRequest:self.request
+                                  uploadProgress:nil
+                                  downloadProgress:nil
                                   completionHandler:^(NSURLResponse *response, id responseObject, NSError *error) {
                                       [expectation fulfill];
                                   }];
@@ -57,7 +59,7 @@
     self.activityIndicatorView = nil;
     
     [task resume];
-    [self waitForExpectationsWithCommonTimeoutUsingHandler:nil];
+    [self waitForExpectationsWithCommonTimeout];
     [task cancel];
 }
 
@@ -67,6 +69,8 @@
     [self expectationForNotification:AFNetworkingTaskDidCompleteNotification object:nil handler:nil];
     NSURLSessionDataTask *task = [self.sessionManager
                                   dataTaskWithRequest:self.request
+                                  uploadProgress:nil
+                                  downloadProgress:nil
                                   completionHandler:^(NSURLResponse *response, id responseObject, NSError *error) {
                                       //Without the dispatch after, this test would PASS errorenously because the test
                                       //would finish before the notification was posted to all objects that were
@@ -80,7 +84,7 @@
     self.activityIndicatorView = nil;
     
     [task resume];
-    [self waitForExpectationsWithCommonTimeoutUsingHandler:nil];
+    [self waitForExpectationsWithCommonTimeout];
     [task cancel];
 }
 
@@ -89,6 +93,8 @@
     [self expectationForNotification:AFNetworkingTaskDidSuspendNotification object:nil handler:nil];
     NSURLSessionDataTask *task = [self.sessionManager
                                   dataTaskWithRequest:self.request
+                                  uploadProgress:nil
+                                  downloadProgress:nil
                                   completionHandler:^(NSURLResponse *response, id responseObject, NSError *error) {
                                       //Without the dispatch after, this test would PASS errorenously because the test
                                       //would finish before the notification was posted to all objects that were
@@ -104,7 +110,7 @@
     [task resume];
     [task suspend];
     [task resume];
-    [self waitForExpectationsWithCommonTimeoutUsingHandler:nil];
+    [self waitForExpectationsWithCommonTimeout];
     [task cancel];
 }
 

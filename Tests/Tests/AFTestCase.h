@@ -1,5 +1,5 @@
 // AFTestCase.h
-// Copyright (c) 2011–2016 Alamofire Software Foundation (http://alamofire.org/)
+// Copyright (c) 2011–2016 Alamofire Software Foundation ( http://alamofire.org/ )
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -21,13 +21,17 @@
 
 #import <XCTest/XCTest.h>
 
-extern NSString * const AFNetworkingTestsBaseURLString;
-
 @interface AFTestCase : XCTestCase
 
 @property (nonatomic, strong, readonly) NSURL *baseURL;
+@property (nonatomic, strong, readonly) NSURL *pngURL;
+@property (nonatomic, strong, readonly) NSURL *jpegURL;
+@property (nonatomic, strong, readonly) NSURL *delayURL;
+- (NSURL *)URLWithStatusCode:(NSInteger)statusCode;
+
 @property (nonatomic, assign) NSTimeInterval networkTimeout;
 
+- (void)waitForExpectationsWithCommonTimeout;
 - (void)waitForExpectationsWithCommonTimeoutUsingHandler:(XCWaitCompletionHandler)handler;
 
 @end

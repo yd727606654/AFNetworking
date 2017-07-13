@@ -1,5 +1,5 @@
 // AFHTTPRequestSerializationTests.m
-// Copyright (c) 2011–2016 Alamofire Software Foundation (http://alamofire.org/)
+// Copyright (c) 2011–2016 Alamofire Software Foundation ( http://alamofire.org/ )
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -100,6 +100,12 @@
     XCTAssertTrue([[[serializedRequest URL] query] isEqualToString:@"key=value"], @"Query parameters have not been serialized correctly (%@)", [[serializedRequest URL] query]);
 }
 
+- (void)testThatEmptyDictionaryParametersAreProperlyEncoded {
+    NSURLRequest *originalRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://example.com"]];
+    NSURLRequest *serializedRequest = [self.requestSerializer requestBySerializingRequest:originalRequest withParameters:@{} error:nil];
+    XCTAssertFalse([serializedRequest.URL.absoluteString hasSuffix:@"?"]);
+}
+
 - (void)testThatAFHTTPRequestSerialiationSerializesURLEncodableQueryParametersCorrectly {
     NSURLRequest *originalRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://example.com"]];
     NSURLRequest *serializedRequest = [self.requestSerializer requestBySerializingRequest:originalRequest withParameters:@{@"key":@" :#[]@!$&'()*+,;=/?"} error:nil];
@@ -181,6 +187,28 @@
     XCTAssertTrue([serializer.HTTPRequestHeaders[headerField] isEqualToString:headerValue]);
     [serializer setValue:nil forHTTPHeaderField:headerField];
     XCTAssertFalse([serializer.HTTPRequestHeaders.allKeys containsObject:headerField]);
+}
+
+- (void)testThatHTTPHeaderValueCanBeSetToReferenceCountedStringFromMultipleThreadsWithoutCrashing {
+    @autoreleasepool {
+        int dispatchTarget = 1000;
+        __block int completionCount = 0;
+        for(int i=0; i<dispatchTarget; i++) {
+            NSString *nonStaticNonTaggedPointerString = [NSString stringWithFormat:@"%@", [NSDate dateWithTimeIntervalSince1970:i]];
+            dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0ul);
+            dispatch_async(queue, ^{
+                
+                [self.requestSerializer setValue:nonStaticNonTaggedPointerString forHTTPHeaderField:@"FrequentlyUpdatedHeaderField"];
+                
+                dispatch_sync(dispatch_get_main_queue(), ^{
+                    completionCount++;
+                });
+            });
+        }
+        while (completionCount < dispatchTarget) {
+            [[NSRunLoop currentRunLoop] runMode:NSDefaultRunLoopMode beforeDate:[NSDate dateWithTimeIntervalSinceNow:0.1]];
+        }
+    } // Test succeeds if it does not EXC_BAD_ACCESS when cleaning up the @autoreleasepool
 }
 
 #pragma mark - Helper Methods
